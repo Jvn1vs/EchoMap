@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import * as echarts from 'echarts';
 import axios from 'axios';
+import FootprintDrawer from './FootprintDrawer';
 
 const PROVINCE_MAP = {
   '北京市': 'beijing', '天津市': 'tianjin', '上海市': 'shanghai', '重庆市': 'chongqing',
@@ -17,7 +18,15 @@ const PROVINCE_MAP = {
 const MapChart = () => {
   const chartRef = useRef(null);
   const currProvinceRef = useRef(null);
+  const isDrilledDownRef = useRef(false);
   const [isDrilledDown, setIsDrilledDown] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [selectedCity, setSelectedCity] = useState('');
+
+  const setDrilledDown = (next) => {
+    isDrilledDownRef.current = next;
+    setIsDrilledDown(next);
+  };
 
   useEffect(() => {
     const chartDom = document.getElementById('main');
@@ -35,7 +44,7 @@ const MapChart = () => {
         backgroundColor: '#f7f7f7',
         title: {
           text: 'EchoMap 足迹地图',
-          subtext: '点击省份查看详情',
+          subtext: '点击省份添加旅游足迹📍',
           left: 'center',
           top: 20
         },
@@ -58,9 +67,15 @@ const MapChart = () => {
       });
     };
 
-    // 点击下钻
+    // 点击下钻 / 城市记录
     myChart.on('click', async (params) => {
       const clickName = params.name;
+      if (isDrilledDownRef.current) {
+        if (!clickName) return;
+        setSelectedCity(clickName);
+        setDrawerOpen(true);
+        return;
+      }
       const fileName = PROVINCE_MAP[clickName];
 
       if (!fileName) return;
@@ -70,7 +85,7 @@ const MapChart = () => {
       echarts.registerMap(fileName, mapRes.data);
 
       currProvinceRef.current = clickName;
-      setIsDrilledDown(true);
+      setDrilledDown(true);
 
       myChart.setOption({
         geo: {
@@ -114,7 +129,9 @@ const MapChart = () => {
     if (!myChart) return;
 
     currProvinceRef.current = null;
-    setIsDrilledDown(false);
+    setDrilledDown(false);
+    setDrawerOpen(false);
+    setSelectedCity('');
 
     myChart.setOption({
       geo: {
@@ -150,6 +167,11 @@ const MapChart = () => {
           ← 返回全国
         </button>
       )}
+      <FootprintDrawer
+        open={drawerOpen}
+        city={selectedCity}
+        onClose={() => setDrawerOpen(false)}
+      />
       <div id="main" style={{ width: '100%', height: '100%' }} />
     </div>
   );
