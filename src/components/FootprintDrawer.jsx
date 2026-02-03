@@ -1,23 +1,58 @@
 import React, { useEffect, useState } from 'react';
+import { Rate } from 'antd';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
 
 const defaultForm = {
   visitedAt: '',
-  rating: '',
+  rating: 0,
   tags: '',
   notes: '',
   files: [],
 };
 
+const primaryTags = [
+  '美食',
+  '小吃',
+  '自驾',
+  '徒步',
+  '露营',
+  'city walk',
+  '打卡',
+  '地标',
+  '民俗',
+  '人文历史',
+  '摄影',
+  '自然风光',
+  '山川',
+  '海岛',
+  '江河湖泊',
+  '森林',
+  '草原',
+  '夜景',
+  '购物',
+  '温泉',
+  '滑雪',
+  '演出',
+  '赛事',
+  '博物馆',
+  '公园',
+  '动物园',
+  '植物园',
+  
+];
+
+
 const FootprintDrawer = ({ open, city, onClose }) => {
   const [form, setForm] = useState(defaultForm);
   const [saveState, setSaveState] = useState({ loading: false, error: '', success: false });
+  const [hoverRating, setHoverRating] = useState(null);
+  const displayRating = (Number.isFinite(hoverRating) ? hoverRating : (form.rating || 0)).toFixed(1);
 
   useEffect(() => {
     if (!open) return;
     setForm(defaultForm);
     setSaveState({ loading: false, error: '', success: false });
-  }, [open, city]);
+  }, [open]);
 
   const handleGenerateNotes = () => {
     if (!city) return;
@@ -26,6 +61,38 @@ const FootprintDrawer = ({ open, city, onClose }) => {
       ...prev,
       notes: `我在${city}留下了旅行足迹${dateText}。这次旅程有很多值得回味的细节。`,
     }));
+  };
+
+  const clearTags = () => {
+    setForm((prev) => ({ ...prev, tags: '' }));
+  };
+
+  const clearNotes = () => {
+    setForm((prev) => ({ ...prev, notes: '' }));
+  };
+
+  const toggleTag = (tag) => {
+    setForm((prev) => {
+      const nextTags = prev.tags
+        .split(',')
+        .map((item) => item.trim())
+        .filter(Boolean);
+      const formatted = tag.startsWith('#') ? tag : `#${tag}`;
+      const exists = nextTags.includes(formatted);
+      const updated = exists
+        ? nextTags.filter((item) => item !== formatted)
+        : [...nextTags, formatted];
+      return { ...prev, tags: updated.join(', ') };
+    });
+  };
+
+  const isTagSelected = (tag) => {
+    const formatted = tag.startsWith('#') ? tag : `#${tag}`;
+    return form.tags
+      .split(',')
+      .map((item) => item.trim())
+      .filter(Boolean)
+      .includes(formatted);
   };
 
   const handleFileChange = (event) => {
@@ -71,7 +138,7 @@ const FootprintDrawer = ({ open, city, onClose }) => {
       const payload = {
         region_name: city,
         visited_at: form.visitedAt || null,
-        rating: form.rating ? Number(form.rating) : null,
+        rating: Number.isFinite(form.rating) ? form.rating : 0,
         tags: tagList.length ? tagList : null,
         notes: form.notes || null,
         media_urls: mediaUrls.length ? mediaUrls : null,
@@ -116,7 +183,8 @@ const FootprintDrawer = ({ open, city, onClose }) => {
             border: 'none',
             background: '#f2f2f2',
             borderRadius: 6,
-            padding: '6px 10px',
+            padding: '4px 8px',
+            fontSize: 14,
             cursor: 'pointer',
           }}
         >
@@ -124,7 +192,6 @@ const FootprintDrawer = ({ open, city, onClose }) => {
         </button>
       </div>
       <div style={{ fontSize: 12, color: '#666' }}>
-        点击省内区域即可记录该地级市的旅行足迹。
       </div>
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         <label style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 12 }}>
@@ -138,41 +205,264 @@ const FootprintDrawer = ({ open, city, onClose }) => {
         </label>
         <label style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 12 }}>
           标签（逗号分隔）
-          <input
-            type="text"
-            placeholder="例如：美食, 夜景"
-            value={form.tags}
-            onChange={(event) => setForm((prev) => ({ ...prev, tags: event.target.value }))}
-            style={{ padding: '8px 10px', borderRadius: 6, border: '1px solid #ddd' }}
-          />
+          <div style={{ position: 'relative' }}>
+            <textarea
+              placeholder="例如：美食, 夜景"
+              value={form.tags}
+              onChange={(event) => setForm((prev) => ({ ...prev, tags: event.target.value }))}
+              rows={Math.max(1, Math.ceil(form.tags.length / 39))}
+              style={{
+                padding: '8px 30px 8px 10px',
+                borderRadius: 6,
+                border: '1px solid #ddd',
+                color: '#5b84d6',
+                fontStyle: 'italic',
+                fontSize: 12,
+                resize: 'none',
+                width: '100%',
+                boxSizing: 'border-box',
+              }}
+            />
+            <button
+              type="button"
+              onClick={clearTags}
+              title="清空标签"
+              style={{
+                position: 'absolute',
+                right: 8,
+                bottom: 8,
+                width: 16,
+                height: 16,
+                borderRadius: '50%',
+                border: '1px solid #ccc',
+                background: '#f6f6f6',
+                color: '#999',
+                cursor: 'pointer',
+                lineHeight: '14px',
+                textAlign: 'center',
+                padding: 0,
+              }}
+            >
+              ×
+            </button>
+          </div>
         </label>
-        <label style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 12 }}>
-          评分（1-5）
-          <input
-            type="number"
-            min="1"
-            max="5"
-            value={form.rating}
-            onChange={(event) => setForm((prev) => ({ ...prev, rating: event.target.value }))}
-            style={{ padding: '8px 10px', borderRadius: 6, border: '1px solid #ddd' }}
-          />
-        </label>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          {primaryTags.map((tag) => {
+            const active = isTagSelected(tag);
+            return (
+              <button
+                key={tag}
+                type="button"
+                onClick={() => toggleTag(tag)}
+                style={{
+                  padding: '6px 10px',
+                  borderRadius: 999,
+                  border: active ? '1px solid #409EFF' : '1px solid #ccc',
+                  background: active ? 'rgba(64,158,255,0.12)' : '#fafafa',
+                  color: active ? '#1f5fbf' : '#333',
+                  cursor: 'pointer',
+                  fontSize: 12,
+                }}
+              >
+                {tag}
+              </button>
+            );
+          })}
+        </div>
+        {/* 修改点：将 <label> 换成了 <div>，彻底解决自动触发按钮的问题 */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 12 }}>
+          <span>评分（0–5）</span>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div className="rating-krajee">
+              <Rate
+                allowHalf
+                allowClear={false} // 保持你的原始逻辑
+                value={form.rating || 0}
+                onChange={(value) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    rating: value || 0,
+                  }))
+                }
+                onHoverChange={(value) => setHoverRating(value)}
+                character="★"
+              />
+            </div>
+
+            <div
+              style={{
+                width: 46,
+                textAlign: 'right',
+                fontSize: 12,
+                color: '#666',
+              }}
+            >
+              {displayRating}
+            </div>
+
+            <button
+              type="button"
+              onClick={() =>
+                setForm((prev) => ({
+                  ...prev,
+                  rating: 0,
+                }))
+              }
+              style={{
+                border: 'none',
+                background: '#f2f2f2',
+                borderRadius: 6,
+                padding: '4px 8px',
+                cursor: 'pointer',
+                fontSize: 12,
+                color: '#666',
+              }}
+            >
+              清除
+            </button>
+          </div>
+        </div>
+        {/* <label style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 12 }}>
+          评分（0–5）
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div className="rating-krajee">
+              <Rate
+                allowHalf
+                allowClear={false}
+                value={form.rating}
+                onChange={(value) => setForm((prev) => ({ ...prev, rating: value }))}
+                onHoverChange={(value) => setHoverRating(value)}
+                character="★"
+              />
+            </div>
+
+            <div
+              style={{
+                width: 46,
+                textAlign: 'right',
+                fontSize: 12,
+                color: '#666',
+              }}
+            >
+              {(
+                Number.isFinite(hoverRating)
+                  ? hoverRating
+                  : form.rating
+              ).toFixed(1)}
+            </div>
+
+            <button
+              type="button"
+              onClick={() =>
+                setForm((prev) => ({
+                  ...prev,
+                  rating: 0,
+                }))
+              }
+              style={{
+                border: 'none',
+                background: '#f2f2f2',
+                borderRadius: 6,
+                padding: '4px 8px',
+                cursor: 'pointer',
+                fontSize: 12,
+                color: '#666',
+              }}
+            >
+              清除
+            </button>
+          </div>
+        </label> */}
+
+        {/* <label style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 12 }}>
+          评分（0-5）
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div className="rating-krajee">
+              <Rate
+                allowHalf
+                allowClear={false}
+                // value={Number.isFinite(form.rating) ? form.rating : 0}
+                value={Number(form.rating) || 0}
+                onChange={(value) => setForm((prev) => ({ ...prev, rating: value }))}
+                onHoverChange={(value) => setHoverRating(value)}
+                character="★"
+              />
+            </div>
+            <div style={{ width: 46, textAlign: 'right', fontSize: 12, color: '#666' }}>
+               
+              {(Number(hoverRating) || Number(form.rating) || 0).toFixed(1)}
+
+            </div>
+            <button
+              type="button"
+              onClick={() => setForm((prev) => ({ ...prev, rating: 0 }))}
+              style={{
+                border: 'none',
+                background: '#f2f2f2',
+                borderRadius: 6,
+                padding: '4px 8px',
+                cursor: 'pointer',
+                fontSize: 12,
+                color: '#666',
+              }}
+            >
+              清除
+            </button>
+          </div>
+        </label> */}
         <label style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 12 }}>
           游记/备注
-          <textarea
-            rows={5}
-            value={form.notes}
-            onChange={(event) => setForm((prev) => ({ ...prev, notes: event.target.value }))}
-            placeholder="记录你的旅途故事..."
-            style={{ padding: '8px 10px', borderRadius: 6, border: '1px solid #ddd' }}
-          />
+          <div style={{ position: 'relative' }}>
+            <textarea
+              rows={5}
+              value={form.notes}
+              onChange={(event) => setForm((prev) => ({ ...prev, notes: event.target.value }))}
+              placeholder="记录你的旅途故事..."
+              style={{
+                padding: '8px 30px 8px 10px',
+                borderRadius: 6,
+                border: '1px solid #ddd',
+                width: '100%',
+                boxSizing: 'border-box',
+                color: '#111',
+                fontSize: 13,
+                fontStyle: 'normal',
+                resize: 'none',
+              }}
+            />
+            <button
+              type="button"
+              onClick={clearNotes}
+              title="清空备注"
+              style={{
+                position: 'absolute',
+                right: 8,
+                bottom: 8,
+                width: 16,
+                height: 16,
+                borderRadius: '50%',
+                border: '1px solid #ccc',
+                background: '#f6f6f6',
+                color: '#999',
+                cursor: 'pointer',
+                lineHeight: '14px',
+                textAlign: 'center',
+                padding: 0,
+              }}
+            >
+              ×
+            </button>
+          </div>
         </label>
         <button
           type="button"
           onClick={handleGenerateNotes}
           style={{
             alignSelf: 'flex-start',
-            padding: '6px 10px',
+            padding: '2px 5px',
+            fontSize: 14,
             borderRadius: 6,
             border: '1px solid #ccc',
             background: '#fafafa',

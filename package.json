@@ -10,11 +10,12 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.56.0",
+    "antd": "^5.29.3",
     "axios": "^1.13.2",
     "echarts": "^6.0.0",
     "react": "^19.2.0",
-    "react-dom": "^19.2.0",
-    "@supabase/supabase-js": "^2.56.0"
+    "react-dom": "^19.2.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",

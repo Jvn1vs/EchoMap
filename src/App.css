@@ -40,3 +40,23 @@
 .read-the-docs {
   color: #888;
 }
+
+.rating-krajee .ant-rate-star {
+  margin-inline-end: 4px;
+  font-size: 28px;
+}
+
+.rating-krajee .ant-rate-star-first,
+.rating-krajee .ant-rate-star-second {
+  color: #aaa;
+  -webkit-text-stroke: 0.8px #777;
+  text-shadow: 1px 1px #999;
+}
+
+.rating-krajee .ant-rate-star-full .ant-rate-star-first,
+.rating-krajee .ant-rate-star-full .ant-rate-star-second,
+.rating-krajee .ant-rate-star-half .ant-rate-star-first {
+  color: #fde16d;
+  -webkit-text-stroke: 0.8px #777;
+  text-shadow: 1px 1px #999;
+}
